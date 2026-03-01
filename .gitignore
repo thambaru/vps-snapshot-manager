@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+data/
+tmp/
+*.db
+*.db-shm
+*.db-wal
+.turbo/
