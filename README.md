@@ -14,22 +14,17 @@ A self-hosted web dashboard for creating and managing snapshots of remote server
 
 ## Quick Start
 
-### Option 1: Docker Compose (Recommended)
+### Option 1: One-line install (Recommended)
 
 ```bash
-git clone <repo-url>
-cd vps-snapshot-manager
-
-# Generate a secret key and create .env
-cp .env.example .env
-# Edit .env and set APP_SECRET to: openssl rand -hex 32
-
-docker compose up -d
+curl -fsSL https://raw.githubusercontent.com/thambaru/vps-snapshot-manager/main/scripts/deploy.sh | bash
 ```
 
-Open [http://localhost](http://localhost) in your browser.
+The script installs Docker and Git if missing (Linux only — on macOS it will prompt you to install Docker Desktop if needed), clones the repo, generates a secret key, and starts the stack. Open [http://localhost](http://localhost) when it finishes.
 
-### Option 2: Local Development
+To update an existing install, run the same command again — it pulls the latest changes and rebuilds.
+
+### Option 2: Local development (not for production)
 
 **Prerequisites**: Node.js 20+, pnpm, rclone
 
@@ -99,3 +94,7 @@ packages/
 - **Scheduler**: node-cron
 - **Real-time**: WebSocket via @fastify/websocket
 - **Security**: AES-256-GCM via node-forge
+
+## License
+
+[MIT](LICENSE) © 2026 Thambaru Wijesekara
