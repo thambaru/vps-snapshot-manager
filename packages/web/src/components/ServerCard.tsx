@@ -1,4 +1,4 @@
-import { Server, Wifi, WifiOff, Play } from 'lucide-react';
+import { Server, Wifi, WifiOff, Play, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Server as ServerType } from '../api/servers.js';
 import { StatusBadge } from './StatusBadge.js';
@@ -8,9 +8,10 @@ interface Props {
   server: ServerType;
   onTest?: (id: string) => void;
   onSnapshot?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-export function ServerCard({ server, onTest, onSnapshot }: Props) {
+export function ServerCard({ server, onTest, onSnapshot, onDelete }: Props) {
   const tags: string[] = JSON.parse(server.tags || '[]') as string[];
 
   return (
@@ -72,6 +73,13 @@ export function ServerCard({ server, onTest, onSnapshot }: Props) {
         >
           <Play className="w-3.5 h-3.5" />
           Snapshot
+        </button>
+        <button
+          onClick={() => onDelete?.(server.id)}
+          className="flex items-center justify-center px-2.5 py-1.5 text-xs rounded-md bg-[hsl(222,47%,22%)] hover:bg-red-500/20 hover:text-red-400 text-[hsl(215,20%,55%)] transition-colors"
+          title="Remove server"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>

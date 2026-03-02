@@ -53,6 +53,18 @@ export function Servers() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: serversApi.delete,
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['servers'] }),
+  });
+
+  const handleDelete = (id: string) => {
+    const server = servers.find((s) => s.id === id);
+    if (!server) return;
+    if (!confirm(`Remove "${server.name}"? This cannot be undone.`)) return;
+    deleteMutation.mutate(id);
+  };
+
   const testMutation = useMutation({
     mutationFn: serversApi.test,
     onSuccess: (data) => {
@@ -126,6 +138,7 @@ export function Servers() {
               server={server}
               onTest={handleTest}
               onSnapshot={handleSnapshot}
+              onDelete={handleDelete}
             />
           ))}
         </div>
