@@ -1,4 +1,4 @@
-import { X, CheckCircle2, Loader2, Circle } from 'lucide-react';
+import { X, CheckCircle2, Loader2, Circle, AlertCircle } from 'lucide-react';
 import { useProgressStore, type SnapshotProgress } from '../store/snapshotProgress.js';
 
 const STAGE_LABELS: Record<string, string> = {
@@ -79,43 +79,60 @@ export function ProgressModal({ snapshotId, onClose }: Props) {
           )}
         </div>
 
-        {/* Progress bar */}
-        <div className="px-6 pt-4">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs text-[hsl(215,20%,55%)]">{progress.message}</span>
-            <span className="text-xs font-mono text-[hsl(217,91%,65%)]">{progress.progressPercent}%</span>
+        {progress.status === 'failed' ? (
+          /* Error state */
+          <div className="px-6 py-6">
+            <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-red-400 mb-1">Snapshot failed</p>
+                <p className="text-xs text-[hsl(215,20%,65%)] leading-relaxed wrap-break-word">
+                  {progress.error ?? 'An unexpected error occurred.'}
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="h-1.5 bg-[hsl(222,47%,22%)] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[hsl(217,91%,60%)] rounded-full transition-all duration-500"
-              style={{ width: `${progress.progressPercent}%` }}
-            />
-          </div>
-        </div>
+        ) : (
+          <>
+            {/* Progress bar */}
+            <div className="px-6 pt-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs text-[hsl(215,20%,55%)]">{progress.message}</span>
+                <span className="text-xs font-mono text-[hsl(217,91%,65%)]">{progress.progressPercent}%</span>
+              </div>
+              <div className="h-1.5 bg-[hsl(222,47%,22%)] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[hsl(217,91%,60%)] rounded-full transition-all duration-500"
+                  style={{ width: `${progress.progressPercent}%` }}
+                />
+              </div>
+            </div>
 
-        {/* Stages */}
-        <div className="px-6 py-4 divide-y divide-[hsl(222,47%,22%)]">
-          {allStages.map((stage) => {
-            const doneInfo = progress.stagesDone.find((s) => s.stage === stage);
-            return (
-              <StageRow
-                key={stage}
-                name={stage}
-                isDone={doneStageNames.has(stage)}
-                isCurrent={progress.stage === stage && !doneStageNames.has(stage)}
-                sizeBytes={doneInfo?.sizeBytes}
-                durationMs={doneInfo?.durationMs}
-              />
-            );
-          })}
-        </div>
+            {/* Stages */}
+            <div className="px-6 py-4 divide-y divide-[hsl(222,47%,22%)]">
+              {allStages.map((stage) => {
+                const doneInfo = progress.stagesDone.find((s) => s.stage === stage);
+                return (
+                  <StageRow
+                    key={stage}
+                    name={stage}
+                    isDone={doneStageNames.has(stage)}
+                    isCurrent={progress.stage === stage && !doneStageNames.has(stage)}
+                    sizeBytes={doneInfo?.sizeBytes}
+                    durationMs={doneInfo?.durationMs}
+                  />
+                );
+              })}
+            </div>
 
-        {/* Status */}
-        <div className="px-6 pb-5">
-          <div className="text-xs text-center text-[hsl(215,20%,50%)] capitalize">
-            {progress.status}
-          </div>
-        </div>
+            {/* Status */}
+            <div className="px-6 pb-5">
+              <div className="text-xs text-center text-[hsl(215,20%,50%)] capitalize">
+                {progress.status}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

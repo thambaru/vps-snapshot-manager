@@ -29,11 +29,19 @@ export function Layout() {
     });
 
     const unsub3 = subscribe('snapshot:done', (data) => {
-      const d = data as { snapshotId: string; status: string };
-      setTimeout(() => {
-        complete(d.snapshotId);
-        void queryClient.invalidateQueries({ queryKey: ['snapshots'] });
-      }, 2000);
+      const d = data as { snapshotId: string; status: string; error?: string };
+      if (d.status === 'failed' && d.error) {
+        update(d.snapshotId, { status: 'failed', error: d.error });
+        setTimeout(() => {
+          complete(d.snapshotId);
+          void queryClient.invalidateQueries({ queryKey: ['snapshots'] });
+        }, 8000);
+      } else {
+        setTimeout(() => {
+          complete(d.snapshotId);
+          void queryClient.invalidateQueries({ queryKey: ['snapshots'] });
+        }, 2000);
+      }
     });
 
     const unsub4 = subscribe('server:status', () => {

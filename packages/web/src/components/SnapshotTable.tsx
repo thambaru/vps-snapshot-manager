@@ -1,4 +1,5 @@
-import { Trash2, XCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Trash2, XCircle, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { Snapshot } from '../api/snapshots.js';
 import { StatusBadge } from './StatusBadge.js';
@@ -35,6 +36,8 @@ export function SnapshotTable({
   onCancel,
   onSelect,
 }: Props) {
+  const [errorModal, setErrorModal] = useState<{ message: string } | null>(null);
+
   if (snapshots.length === 0) {
     return (
       <div className="text-center py-12 text-[hsl(215,20%,45%)] text-sm">
@@ -44,6 +47,28 @@ export function SnapshotTable({
   }
 
   return (
+    <>
+    {errorModal && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+        onClick={() => setErrorModal(null)}
+      >
+        <div
+          className="relative w-full max-w-lg mx-4 bg-[hsl(222,47%,13%)] border border-red-500/40 rounded-xl shadow-2xl p-6"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-red-400">Snapshot Failed</h3>
+            <button onClick={() => setErrorModal(null)} className="text-[hsl(215,20%,50%)] hover:text-white transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <pre className="text-xs text-[hsl(215,20%,75%)] whitespace-pre-wrap wrap-break-word font-mono bg-[hsl(222,47%,10%)] rounded-lg p-4 max-h-64 overflow-y-auto">
+            {errorModal.message}
+          </pre>
+        </div>
+      </div>
+    )}
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
@@ -87,7 +112,17 @@ export function SnapshotTable({
                 {formatDistanceToNow(new Date(snap.createdAt), { addSuffix: true })}
               </td>
               <td className="py-3 px-4">
-                <StatusBadge status={snap.status} pulse />
+                {snap.status === 'failed' && snap.errorMessage ? (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setErrorModal({ message: snap.errorMessage! }); }}
+                    className="cursor-pointer"
+                    title="Click to see error"
+                  >
+                    <StatusBadge status={snap.status} pulse />
+                  </button>
+                ) : (
+                  <StatusBadge status={snap.status} pulse />
+                )}
                 {(snap.status === 'running' || snap.status === 'uploading') && (
                   <span className="ml-2 text-xs text-blue-400">{snap.progressPercent}%</span>
                 )}
@@ -124,5 +159,6 @@ export function SnapshotTable({
         </tbody>
       </table>
     </div>
+    </>
   );
 }

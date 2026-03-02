@@ -8,6 +8,7 @@ export interface SnapshotProgress {
   progressPercent: number;
   message: string;
   stagesDone: { stage: string; sizeBytes: number; durationMs: number }[];
+  error?: string;
 }
 
 interface ProgressStore {

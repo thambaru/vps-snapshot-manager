@@ -1,7 +1,7 @@
-import { spawn, execFile } from 'child_process';
+import { spawn, execFile, exec } from 'child_process';
 import { promisify } from 'util';
 import { writeFile, unlink } from 'fs/promises';
-import { tmpdir } from 'os';
+import { tmpdir, platform } from 'os';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { cryptoService } from './crypto.service.js';
@@ -10,6 +10,7 @@ import { storageRemotes } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 
 const execFileAsync = promisify(execFile);
+const execAsync = promisify(exec);
 
 interface RcloneConfig {
   [key: string]: string;
@@ -41,6 +42,43 @@ class RcloneService {
     const match = stdout.match(/rclone v[\d.]+/);
     if (!match) throw new Error('rclone not found or invalid version output');
     return match[0];
+  }
+
+  /**
+   * Returns true if rclone is already present, false if it was just installed.
+   * Throws if installation fails or the platform is unsupported.
+   */
+  async ensureInstalled(onStatus?: (msg: string) => void): Promise<boolean> {
+    try {
+      await this.checkInstalled();
+      return true; // already present
+    } catch {
+      // Not found — attempt install
+    }
+
+    const os = platform();
+    onStatus?.('rclone not found — installing...');
+
+    if (os === 'linux') {
+      // Use rclone's official install script (works on apt/apk/rpm distros)
+      onStatus?.('Downloading and running rclone install script (Linux)...');
+      await execAsync('curl -fsSL https://rclone.org/install.sh | sudo bash', {
+        timeout: 120_000,
+      });
+    } else if (os === 'darwin') {
+      onStatus?.('Installing rclone via Homebrew (macOS)...');
+      await execAsync('brew install rclone', { timeout: 120_000 });
+    } else {
+      throw new Error(
+        `rclone is not installed and automatic installation is not supported on platform "${os}". ` +
+        'Please install rclone manually: https://rclone.org/install/',
+      );
+    }
+
+    // Verify the install succeeded
+    await this.checkInstalled();
+    onStatus?.('rclone installed successfully.');
+    return false; // was just installed
   }
 
   async testRemote(remoteId: string): Promise<{ success: boolean; error?: string }> {

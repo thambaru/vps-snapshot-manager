@@ -123,8 +123,16 @@ class SnapshotService {
     };
 
     try {
+      // ── PRE-FLIGHT: ensure rclone is available locally ────
+      await updateSnapshot(snapshotId, { status: 'running', currentStage: 'prepare', progressPercent: 1 });
+      emitProgress('prepare', 1, 'Checking local dependencies...');
+      await rcloneService.ensureInstalled((msg) => {
+        emitProgress('prepare', 1, msg);
+        appendLog(snapshotId, msg, 'info', 'prepare').catch(() => {});
+      });
+
       // ── PREPARE ──────────────────────────────────────────
-      await updateSnapshot(snapshotId, { status: 'running', currentStage: 'prepare', progressPercent: 2 });
+      await updateSnapshot(snapshotId, { currentStage: 'prepare', progressPercent: 2 });
       emitProgress('prepare', 2, 'Connecting to server...');
 
       await sshService.executeCommand(server, `mkdir -p ${stagingDir}`);
@@ -346,6 +354,13 @@ class SnapshotService {
             await appendLog(snapshotId, `Custom directory backup failed: ${(err as Error).message}`, 'error', 'custom');
           }
         }
+      }
+
+      // ── ABORT IF ANY STAGE FAILED ────────────────────────
+      const failedStages = stageResults.filter((s) => s.status === 'failed');
+      if (failedStages.length > 0) {
+        const summary = failedStages.map((s) => `${s.stage}: ${s.error ?? 'unknown error'}`).join('; ');
+        throw new Error(`Snapshot aborted — the following stages failed: ${summary}`);
       }
 
       // ── BUNDLE ───────────────────────────────────────────
