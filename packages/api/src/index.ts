@@ -28,6 +28,13 @@ async function main() {
     .select({ id: storageRemotes.id })
     .from(storageRemotes)
     .where(eq(storageRemotes.name, 'local-storage'));
+  
+  // Use /app/snapshots in production (mounted volume) or ./snapshots in dev
+  const localStoragePath = process.env.NODE_ENV === 'production' 
+    ? '/app/snapshots' 
+    : join(process.cwd(), 'snapshots');
+  mkdirSync(localStoragePath, { recursive: true });
+  
   if (!existingLocal) {
     // If there are no remotes at all, make local the default
     const [anyRemote] = await db.select({ id: storageRemotes.id }).from(storageRemotes);
@@ -36,10 +43,20 @@ async function main() {
       name: 'local-storage',
       type: 'local',
       encryptedConfig: cryptoService.encrypt(JSON.stringify({})),
-      remotePath: '/var/snapshots',
+      remotePath: localStoragePath,
       isDefault: !anyRemote,
     });
-    console.log('Created built-in local-storage remote');
+    console.log(`Created built-in local-storage remote at ${localStoragePath}`);
+  } else {
+    // Update existing local-storage to use correct path if it's pointing to /var/snapshots
+    const [local] = await db.select().from(storageRemotes).where(eq(storageRemotes.name, 'local-storage'));
+    if (local && local.remotePath === '/var/snapshots') {
+      await db
+        .update(storageRemotes)
+        .set({ remotePath: localStoragePath })
+        .where(eq(storageRemotes.name, 'local-storage'));
+      console.log(`Updated local-storage remote path to ${localStoragePath}`);
+    }
   }
 
   // Verify rclone is installed

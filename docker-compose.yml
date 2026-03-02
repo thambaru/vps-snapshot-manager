@@ -8,6 +8,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./tmp:/app/tmp
+      - ./snapshots:/app/snapshots
     environment:
       - NODE_ENV=production
       - PORT=3001

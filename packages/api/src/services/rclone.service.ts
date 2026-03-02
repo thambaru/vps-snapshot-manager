@@ -16,24 +16,32 @@ interface RcloneConfig {
   [key: string]: string;
 }
 
-async function writeEphemeralConfig(remoteName: string, config: RcloneConfig): Promise<string> {
+async function writeEphemeralConfig(remoteName: string, remoteType: string, config: RcloneConfig): Promise<string> {
   const configPath = join(tmpdir(), `rclone-${uuidv4()}.conf`);
   const lines = [`[${remoteName}]`];
+  
+  // Always include the type first
+  lines.push(`type = ${remoteType}`);
+  
+  // Then add other config options
   for (const [k, v] of Object.entries(config)) {
-    lines.push(`${k} = ${v}`);
+    // Skip if 'type' is already in config to avoid duplication
+    if (k !== 'type') {
+      lines.push(`${k} = ${v}`);
+    }
   }
   await writeFile(configPath, lines.join('\n') + '\n', { mode: 0o600 });
   return configPath;
 }
 
-async function getRemoteConfig(remoteId: string): Promise<{ name: string; config: RcloneConfig }> {
+async function getRemoteConfig(remoteId: string): Promise<{ name: string; type: string; config: RcloneConfig }> {
   const [remote] = await db
     .select()
     .from(storageRemotes)
     .where(eq(storageRemotes.id, remoteId));
   if (!remote) throw new Error(`Storage remote not found: ${remoteId}`);
   const config = JSON.parse(cryptoService.decrypt(remote.encryptedConfig)) as RcloneConfig;
-  return { name: remote.name, config };
+  return { name: remote.name, type: remote.type, config };
 }
 
 class RcloneService {
@@ -84,8 +92,8 @@ class RcloneService {
   async testRemote(remoteId: string): Promise<{ success: boolean; error?: string }> {
     let configPath: string | undefined;
     try {
-      const { name, config } = await getRemoteConfig(remoteId);
-      configPath = await writeEphemeralConfig(name, config);
+      const { name, type, config } = await getRemoteConfig(remoteId);
+      configPath = await writeEphemeralConfig(name, type, config);
       await execFileAsync('rclone', ['lsd', '--config', configPath, `${name}:`], {
         timeout: 30_000,
       });
@@ -100,8 +108,8 @@ class RcloneService {
   async listFiles(remoteId: string, path: string = ''): Promise<unknown[]> {
     let configPath: string | undefined;
     try {
-      const { name, config } = await getRemoteConfig(remoteId);
-      configPath = await writeEphemeralConfig(name, config);
+      const { name, type, config } = await getRemoteConfig(remoteId);
+      configPath = await writeEphemeralConfig(name, type, config);
       const { stdout } = await execFileAsync(
         'rclone',
         ['lsjson', '--config', configPath, `${name}:${path}`],
@@ -121,9 +129,19 @@ class RcloneService {
   ): Promise<void> {
     let configPath: string | undefined;
     try {
-      const { name, config } = await getRemoteConfig(remoteId);
-      configPath = await writeEphemeralConfig(name, config);
+      const { name, type, config } = await getRemoteConfig(remoteId);
+      configPath = await writeEphemeralConfig(name, type, config);
       const destination = `${name}:${remotePath}`;
+
+      // Ensure the destination directory exists
+      try {
+        await execFileAsync('rclone', ['mkdir', '--config', configPath, destination], {
+          timeout: 30_000,
+        });
+      } catch (err) {
+        // Directory might already exist, or we don't have permissions
+        // Let the copy command report the actual error
+      }
 
       await new Promise<void>((resolve, reject) => {
         const proc = spawn(
@@ -141,8 +159,12 @@ class RcloneService {
           { stdio: ['ignore', 'pipe', 'pipe'] },
         );
 
+        let stderrBuffer = '';
+
         proc.stderr.on('data', (data: Buffer) => {
           const line = data.toString();
+          stderrBuffer += line;
+          
           // Parse: "Transferred: 100%, 1.23 GiB, 45 MiB/s, ETA 0s"
           const match = line.match(/(\d+)%.*?([0-9.]+ [KMGT]?i?B\/s).*?ETA\s+(\S+)/);
           if (match && onProgress) {
@@ -152,7 +174,10 @@ class RcloneService {
 
         proc.on('close', (code) => {
           if (code === 0) resolve();
-          else reject(new Error(`rclone exited with code ${code}`));
+          else {
+            const errorMsg = stderrBuffer.trim() || `rclone exited with code ${code}`;
+            reject(new Error(`rclone failed: ${errorMsg}`));
+          }
         });
 
         proc.on('error', reject);
@@ -165,8 +190,8 @@ class RcloneService {
   async deleteFile(remoteId: string, filePath: string): Promise<void> {
     let configPath: string | undefined;
     try {
-      const { name, config } = await getRemoteConfig(remoteId);
-      configPath = await writeEphemeralConfig(name, config);
+      const { name, type, config } = await getRemoteConfig(remoteId);
+      configPath = await writeEphemeralConfig(name, type, config);
       await execFileAsync('rclone', [
         'deletefile',
         '--config', configPath,
