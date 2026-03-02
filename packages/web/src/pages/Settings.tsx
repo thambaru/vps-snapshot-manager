@@ -30,9 +30,6 @@ const PROVIDER_FIELDS: Record<string, { key: string; label: string; type?: strin
     { key: 'user', label: 'Username' },
     { key: 'key_pem', label: 'Private Key (PEM)', type: 'textarea' },
   ],
-  local: [
-    { key: 'description', label: 'Description (for reference)' },
-  ],
   b2: [
     { key: 'account', label: 'Account ID' },
     { key: 'key', label: 'Application Key', type: 'password' },
@@ -97,9 +94,6 @@ export function Settings() {
 
   const onSubmit = (data: FormData) => {
     const config: Record<string, string> = { type: data.type, ...configFields };
-    if (data.type === 'local') {
-      config.type = 'local';
-    }
     createMutation.mutate({
       name: data.name,
       type: data.type,
@@ -127,61 +121,65 @@ export function Settings() {
 
         {isLoading ? (
           <div className="text-center py-8 text-[hsl(215,20%,45%)]">Loading...</div>
-        ) : remotes.length === 0 ? (
-          <div className="text-center py-8 text-[hsl(215,20%,45%)] text-sm">
-            No storage remotes yet. Add one to start uploading snapshots.
-          </div>
         ) : (
           <div className="divide-y divide-[hsl(222,47%,18%)]">
-            {remotes.map((remote) => (
-              <div key={remote.id} className="flex items-center justify-between px-5 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-[hsl(222,47%,22%)] rounded-lg flex items-center justify-center text-xs font-mono text-[hsl(215,20%,60%)]">
-                    {remote.type.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">{remote.name}</span>
-                      {remote.isDefault && (
-                        <span className="px-1.5 py-0.5 text-xs bg-yellow-500/20 text-yellow-400 rounded">default</span>
-                      )}
+            {remotes.map((remote) => {
+              const isBuiltIn = remote.name === 'local-storage';
+              return (
+                <div key={remote.id} className="flex items-center justify-between px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-[hsl(222,47%,22%)] rounded-lg flex items-center justify-center text-xs font-mono text-[hsl(215,20%,60%)]">
+                      {remote.type.slice(0, 2).toUpperCase()}
                     </div>
-                    <p className="text-xs text-[hsl(215,20%,50%)]">{remote.type} · {remote.remotePath}</p>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">{remote.name}</span>
+                        {isBuiltIn && (
+                          <span className="px-1.5 py-0.5 text-xs bg-[hsl(215,20%,30%)] text-[hsl(215,20%,65%)] rounded">built-in</span>
+                        )}
+                        {remote.isDefault && (
+                          <span className="px-1.5 py-0.5 text-xs bg-yellow-500/20 text-yellow-400 rounded">default</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[hsl(215,20%,50%)]">{remote.type} · {remote.remotePath}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {testResults[remote.id] && (
+                      <span className={`text-xs ${testResults[remote.id].success ? 'text-green-400' : 'text-red-400'}`}>
+                        {testResults[remote.id].success ? '✓ Connected' : '✗ Failed'}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => testMutation.mutate(remote.id)}
+                      className="p-1.5 text-[hsl(215,20%,50%)] hover:text-blue-400 transition-colors"
+                      title="Test connection"
+                    >
+                      <Wifi className="w-4 h-4" />
+                    </button>
+                    {!remote.isDefault && (
+                      <button
+                        onClick={() => defaultMutation.mutate(remote.id)}
+                        className="p-1.5 text-[hsl(215,20%,50%)] hover:text-yellow-400 transition-colors"
+                        title="Set as default"
+                      >
+                        <Star className="w-4 h-4" />
+                      </button>
+                    )}
+                    {!isBuiltIn && (
+                      <button
+                        onClick={() => {
+                          if (confirm('Delete this remote?')) deleteMutation.mutate(remote.id);
+                        }}
+                        className="p-1.5 text-[hsl(215,20%,50%)] hover:text-red-400 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {testResults[remote.id] && (
-                    <span className={`text-xs ${testResults[remote.id].success ? 'text-green-400' : 'text-red-400'}`}>
-                      {testResults[remote.id].success ? '✓ Connected' : '✗ Failed'}
-                    </span>
-                  )}
-                  <button
-                    onClick={() => testMutation.mutate(remote.id)}
-                    className="p-1.5 text-[hsl(215,20%,50%)] hover:text-blue-400 transition-colors"
-                    title="Test connection"
-                  >
-                    <Wifi className="w-4 h-4" />
-                  </button>
-                  {!remote.isDefault && (
-                    <button
-                      onClick={() => defaultMutation.mutate(remote.id)}
-                      className="p-1.5 text-[hsl(215,20%,50%)] hover:text-yellow-400 transition-colors"
-                      title="Set as default"
-                    >
-                      <Star className="w-4 h-4" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      if (confirm('Delete this remote?')) deleteMutation.mutate(remote.id);
-                    }}
-                    className="p-1.5 text-[hsl(215,20%,50%)] hover:text-red-400 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -227,7 +225,6 @@ export function Settings() {
                   <option value="sftp">SFTP</option>
                   <option value="b2">Backblaze B2</option>
                   <option value="dropbox">Dropbox</option>
-                  <option value="local">Local Filesystem</option>
                 </select>
                 {errors.type && <p className="text-xs text-red-400 mt-1">{errors.type.message}</p>}
               </div>
@@ -257,6 +254,7 @@ export function Settings() {
                 <label className="block text-xs text-[hsl(215,20%,55%)] mb-1">Remote Path</label>
                 <input
                   {...register('remotePath')}
+                  placeholder="VPS-Snapshots/"
                   className="w-full px-3 py-2 text-sm bg-[hsl(222,47%,18%)] border border-[hsl(222,47%,28%)] rounded-lg focus:outline-none focus:border-[hsl(217,91%,60%)]"
                 />
               </div>

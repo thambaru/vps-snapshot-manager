@@ -94,6 +94,7 @@ export const storageRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.delete<{ Params: { id: string } }>('/:id', async (req, reply) => {
     const [existing] = await db.select().from(storageRemotes).where(eq(storageRemotes.id, req.params.id));
     if (!existing) return reply.code(404).send({ error: 'Remote not found' });
+    if (existing.name === 'local-storage') return reply.code(400).send({ error: 'Cannot delete the built-in local storage remote' });
     await db.delete(storageRemotes).where(eq(storageRemotes.id, req.params.id));
     return { success: true };
   });

@@ -2,19 +2,19 @@ import forge from 'node-forge';
 import { config } from '../config.js';
 
 class CryptoService {
-  private key: forge.util.ByteStringBuffer;
+  private key: string;
 
   constructor() {
     const secret = config.appSecret;
     if (secret.length < 64) {
       throw new Error('APP_SECRET must be at least 64 hex characters (32 bytes)');
     }
-    this.key = forge.util.createBuffer(forge.util.hexToBytes(secret.slice(0, 64)));
+    this.key = forge.util.hexToBytes(secret.slice(0, 64));
   }
 
   encrypt(plaintext: string): string {
     const iv = forge.random.getBytesSync(12); // 96-bit IV for GCM
-    const cipher = forge.cipher.createCipher('AES-GCM', this.key);
+    const cipher = forge.cipher.createCipher('AES-GCM', this.key as unknown as forge.util.ByteStringBuffer);
     cipher.start({ iv });
     cipher.update(forge.util.createBuffer(plaintext, 'utf8'));
     cipher.finish();
@@ -30,7 +30,7 @@ class CryptoService {
     const iv = bytes.slice(0, 12);
     const tag = forge.util.createBuffer(bytes.slice(12, 28));
     const encrypted = bytes.slice(28);
-    const decipher = forge.cipher.createDecipher('AES-GCM', this.key);
+    const decipher = forge.cipher.createDecipher('AES-GCM', this.key as unknown as forge.util.ByteStringBuffer);
     // start() accepts iv+tag but typings only show iv
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (decipher as any).start({ iv, tag });
