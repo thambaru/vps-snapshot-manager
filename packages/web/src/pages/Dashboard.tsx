@@ -26,7 +26,8 @@ function StatCard({ icon: Icon, label, value, color }: {
 }
 
 export function Dashboard() {
-  const { data: servers = [] } = useQuery({ queryKey: ['servers'], queryFn: serversApi.list });
+  const { data: serversRaw } = useQuery({ queryKey: ['servers'], queryFn: serversApi.list });
+  const servers = Array.isArray(serversRaw) ? serversRaw : [];
   const { data: snapshotData } = useQuery({
     queryKey: ['snapshots', { limit: 10 }],
     queryFn: () => snapshotsApi.list({ limit: 10 }),

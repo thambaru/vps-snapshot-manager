@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --filter @vps-snapshot/api exec tsc --noEmit)",
+      "Bash(pnpm --filter @vps-snapshot/web exec tsc --noEmit)",
+      "Bash(git add packages/web/package.json packages/web/tsconfig.json packages/web/vite.config.ts packages/web/index.html packages/web/src/index.css packages/web/src/main.tsx packages/web/src/App.tsx packages/web/src/api/ packages/web/src/hooks/ packages/web/src/store/)",
+      "Bash(git commit:*)",
+      "Bash(git add packages/web/src/components/)",
+      "Bash(git add packages/web/src/pages/)",
+      "Bash(git add docker-compose.yml Dockerfile.api Dockerfile.web nginx.conf scripts/ README.md)",
+      "Bash(chmod +x /Users/thambaru/Development/vps-snapshots-to-google-drive/scripts/deploy.sh)"
+    ]
+  }
+}

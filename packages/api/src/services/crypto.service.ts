@@ -1,4 +1,4 @@
-import * as forge from 'node-forge';
+import forge from 'node-forge';
 import { config } from '../config.js';
 
 class CryptoService {
