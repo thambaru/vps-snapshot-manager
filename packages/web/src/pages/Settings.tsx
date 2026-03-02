@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Star, Wifi, X } from 'lucide-react';
+import { Plus, Trash2, Star, Wifi, X, Terminal, Copy, Check } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -52,6 +52,7 @@ export function Settings() {
   const [showForm, setShowForm] = useState(false);
   const [configFields, setConfigFields] = useState<Record<string, string>>({});
   const [testResults, setTestResults] = useState<Record<string, { success: boolean; error?: string }>>({});
+  const [copied, setCopied] = useState(false);
   const qc = useQueryClient();
 
   const { data: remotes = [], isLoading } = useQuery({
@@ -184,12 +185,6 @@ export function Settings() {
         )}
       </div>
 
-      {/* rclone note */}
-      <div className="bg-[hsl(217,91%,60%,0.08)] border border-[hsl(217,91%,60%,0.2)] rounded-xl p-5 text-sm text-[hsl(215,20%,65%)]">
-        <p className="font-medium text-[hsl(217,91%,70%)] mb-1">Using OAuth providers (Google Drive, OneDrive)?</p>
-        <p>Run <code className="font-mono bg-[hsl(222,47%,20%)] px-1.5 py-0.5 rounded text-xs">rclone authorize "drive"</code> (or "onedrive") on your local machine to get the token JSON, then paste it into the Token field above.</p>
-      </div>
-
       {/* Add Remote Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
@@ -249,6 +244,33 @@ export function Settings() {
                   )}
                 </div>
               ))}
+
+              {['drive', 'onedrive', 'dropbox'].includes(selectedType) && (() => {
+                const cmd = `rclone authorize "${selectedType}"`;
+                return (
+                  <div className="bg-[hsl(217,91%,60%,0.08)] border border-[hsl(217,91%,60%,0.2)] rounded-lg p-3 text-xs text-[hsl(215,20%,65%)]">
+                    <p className="font-medium text-[hsl(217,91%,70%)] mb-2">Run this on your local machine to get the token JSON:</p>
+                    <div className="flex items-center gap-2 bg-[hsl(222,47%,10%)] border border-[hsl(222,47%,22%)] rounded-lg px-3 py-2">
+                      <Terminal className="w-3.5 h-3.5 text-[hsl(215,20%,45%)] shrink-0" />
+                      <code className="font-mono text-[hsl(142,70%,60%)] flex-1 select-all">{cmd}</code>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void navigator.clipboard.writeText(cmd).then(() => {
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 2000);
+                          });
+                        }}
+                        className="text-[hsl(215,20%,45%)] hover:text-white transition-colors"
+                        title="Copy command"
+                      >
+                        {copied ? <Check className="w-3.5 h-3.5 text-[hsl(142,70%,60%)]" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                    <p className="mt-2">Paste the output JSON into the Token field above.</p>
+                  </div>
+                );
+              })()}
 
               <div>
                 <label className="block text-xs text-[hsl(215,20%,55%)] mb-1">Remote Path</label>

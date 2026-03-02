@@ -4,11 +4,12 @@ import { Plus, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { serversApi, type CreateServerInput } from '../api/servers.js';
+import { serversApi, type CreateServerInput, type Server as ServerType } from '../api/servers.js';
 import { storageApi } from '../api/storage.js';
 import { snapshotsApi } from '../api/snapshots.js';
 import { ServerCard } from '../components/ServerCard.js';
 import { ProgressModal } from '../components/ProgressModal.js';
+import { TestConnectionModal } from '../components/TestConnectionModal.js';
 import { useProgressStore } from '../store/snapshotProgress.js';
 
 const schema = z.object({
@@ -29,6 +30,8 @@ export function Servers() {
   const [showForm, setShowForm] = useState(false);
   const [activeSnapshotId, setActiveSnapshotId] = useState<string | null>(null);
   const [snapshotServerId, setSnapshotServerId] = useState<string | null>(null);
+  const [testingServer, setTestingServer] = useState<ServerType | null>(null);
+  const [testResult, setTestResult] = useState<{ success: boolean; latencyMs: number; error?: string } | undefined>();
   const qc = useQueryClient();
   const activeSnapshots = useProgressStore((s) => s.active);
 
@@ -52,8 +55,19 @@ export function Servers() {
 
   const testMutation = useMutation({
     mutationFn: serversApi.test,
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['servers'] }),
+    onSuccess: (data) => {
+      setTestResult(data);
+      void qc.invalidateQueries({ queryKey: ['servers'] });
+    },
   });
+
+  const handleTest = (id: string) => {
+    const server = servers.find((s) => s.id === id);
+    if (!server) return;
+    setTestingServer(server);
+    setTestResult(undefined);
+    testMutation.mutate(id);
+  };
 
   const snapshotMutation = useMutation({
     mutationFn: ({ serverId, remoteId }: { serverId: string; remoteId: string }) =>
@@ -105,12 +119,12 @@ export function Servers() {
           No servers yet. Add your first server to get started.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {servers.map((server) => (
             <ServerCard
               key={server.id}
               server={server}
-              onTest={(id) => testMutation.mutate(id)}
+              onTest={handleTest}
               onSnapshot={handleSnapshot}
             />
           ))}
@@ -247,6 +261,16 @@ export function Servers() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Test Connection Modal */}
+      {testingServer && (
+        <TestConnectionModal
+          serverName={`${testingServer.username}@${testingServer.host}`}
+          isPending={testMutation.isPending}
+          result={testResult}
+          onClose={() => { setTestingServer(null); setTestResult(undefined); }}
+        />
       )}
 
       {/* Snapshot Progress Modals */}

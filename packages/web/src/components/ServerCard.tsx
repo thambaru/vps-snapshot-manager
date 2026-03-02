@@ -32,7 +32,7 @@ export function ServerCard({ server, onTest, onSnapshot }: Props) {
             </p>
           </div>
         </div>
-        <StatusBadge status={server.status} />
+        <div className="shrink-0"><StatusBadge status={server.status} /></div>
       </div>
 
       {tags.length > 0 && (

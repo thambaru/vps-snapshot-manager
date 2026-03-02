@@ -69,9 +69,12 @@ class SnapshotService {
 
     // Run async in background — don't await
     this.runSnapshot(snapshotId, serverId, storageRemoteId).catch(async (err) => {
+      const message = (err as Error).message;
+      // Write to logs so the terminal panel always shows the final error
+      await appendLog(snapshotId, `Snapshot failed: ${message}`, 'error').catch(() => {});
       await updateSnapshot(snapshotId, {
         status: 'failed',
-        errorMessage: (err as Error).message,
+        errorMessage: message,
         completedAt: new Date(),
       });
       progressService.broadcast({
@@ -80,7 +83,7 @@ class SnapshotService {
         status: 'failed',
         totalSizeBytes: 0,
         durationSeconds: 0,
-        error: (err as Error).message,
+        error: message,
       });
     });
 
@@ -134,9 +137,16 @@ class SnapshotService {
       // ── PREPARE ──────────────────────────────────────────
       await updateSnapshot(snapshotId, { currentStage: 'prepare', progressPercent: 2 });
       emitProgress('prepare', 2, 'Connecting to server...');
+      await appendLog(snapshotId, `Connecting to ${server.username}@${server.host}:${server.port} via SSH...`, 'info', 'prepare');
 
-      await sshService.executeCommand(server, `mkdir -p ${stagingDir}`);
-      await appendLog(snapshotId, `Staging directory created: ${stagingDir}`, 'info', 'prepare');
+      try {
+        await sshService.executeCommand(server, `mkdir -p ${stagingDir}`);
+      } catch (err) {
+        await appendLog(snapshotId, `SSH connection failed: ${(err as Error).message}`, 'error', 'prepare');
+        throw err;
+      }
+
+      await appendLog(snapshotId, `Connected. Staging directory created: ${stagingDir}`, 'info', 'prepare');
       emitProgress('prepare', 5, 'Connected. Staging area ready.');
 
       // Save config snapshot
