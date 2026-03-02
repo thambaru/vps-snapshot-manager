@@ -115,7 +115,7 @@ export function Schedules() {
                   <td className="py-3 px-4 text-[hsl(215,20%,65%)] text-xs">{remoteMap[schedule.storageRemoteId] ?? '—'}</td>
                   <td className="py-3 px-4 text-xs text-[hsl(215,20%,55%)]">
                     {schedule.lastRunAt
-                      ? formatDistanceToNow(new Date(schedule.lastRunAt * 1000), { addSuffix: true })
+                      ? formatDistanceToNow(new Date(schedule.lastRunAt), { addSuffix: true })
                       : 'Never'}
                     {schedule.lastRunStatus && (
                       <span className={`ml-1 ${schedule.lastRunStatus === 'failed' ? 'text-red-400' : 'text-green-400'}`}>

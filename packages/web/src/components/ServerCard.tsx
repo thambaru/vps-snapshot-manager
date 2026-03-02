@@ -50,7 +50,7 @@ export function ServerCard({ server, onTest, onSnapshot }: Props) {
 
       {server.lastPingAt && (
         <p className="text-xs text-[hsl(215,20%,50%)] mb-3">
-          Last ping: {formatDistanceToNow(new Date(server.lastPingAt * 1000), { addSuffix: true })}
+          Last ping: {formatDistanceToNow(new Date(server.lastPingAt), { addSuffix: true })}
         </p>
       )}
 

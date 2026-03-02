@@ -37,7 +37,7 @@ export function Dashboard() {
   const snapshots = snapshotData?.items ?? [];
   const onlineCount = servers.filter((s) => s.status === 'online').length;
   const failedToday = snapshots.filter(
-    (s) => s.status === 'failed' && s.createdAt * 1000 > Date.now() - 86400000,
+    (s) => s.status === 'failed' && new Date(s.createdAt).getTime() > Date.now() - 86400000,
   ).length;
   const serverNames = Object.fromEntries(servers.map((s) => [s.id, s.name]));
 
@@ -95,7 +95,7 @@ export function Dashboard() {
                   <p className="text-xs text-[hsl(215,20%,50%)] font-mono mt-0.5">{schedule.cronExpression}</p>
                   {schedule.lastRunAt && (
                     <p className="text-xs text-[hsl(215,20%,40%)] mt-0.5">
-                      Last run: {formatDistanceToNow(new Date(schedule.lastRunAt * 1000), { addSuffix: true })}
+                      Last run: {formatDistanceToNow(new Date(schedule.lastRunAt), { addSuffix: true })}
                     </p>
                   )}
                 </div>

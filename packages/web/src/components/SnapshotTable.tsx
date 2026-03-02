@@ -84,7 +84,7 @@ export function SnapshotTable({
                 </td>
               )}
               <td className="py-3 px-4 text-[hsl(215,20%,65%)] text-xs">
-                {formatDistanceToNow(new Date(snap.createdAt * 1000), { addSuffix: true })}
+                {formatDistanceToNow(new Date(snap.createdAt), { addSuffix: true })}
               </td>
               <td className="py-3 px-4">
                 <StatusBadge status={snap.status} pulse />
