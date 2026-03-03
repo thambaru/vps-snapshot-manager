@@ -443,6 +443,7 @@ export function ServerDetail() {
         <SnapshotTable
           snapshots={snapshotData?.items ?? []}
           showServer={false}
+          onSelect={(snapId) => setActiveSnapshotId(snapId)}
           onDelete={(snapId) => {
             if (confirm('Delete this snapshot?')) deleteMutation.mutate(snapId);
           }}
@@ -450,7 +451,7 @@ export function ServerDetail() {
       </div>
 
       {/* Progress Modal */}
-      {activeSnapshotId && activeSnapshots.has(activeSnapshotId) && (
+      {activeSnapshotId && (
         <ProgressModal
           snapshotId={activeSnapshotId}
           onClose={() => setActiveSnapshotId(null)}

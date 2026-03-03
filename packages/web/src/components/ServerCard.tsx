@@ -8,22 +8,17 @@ interface Props {
   server: ServerType;
   onTest?: (id: string) => void;
   onSnapshot?: (id: string) => void;
+  onHistory?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
 
-export function ServerCard({ server, onTest, onSnapshot, onDelete }: Props) {
+export function ServerCard({ server, onTest, onSnapshot, onHistory, onDelete }: Props) {
   const tags: string[] = JSON.parse(server.tags || '[]') as string[];
 
   return (
-    <Link
-      to={`/servers/${server.id}`}
+    <div
+      onClick={() => onHistory?.(server.id)}
       className="block bg-[hsl(222,47%,15%)] border border-[hsl(222,47%,22%)] rounded-xl p-5 hover:border-[hsl(222,47%,30%)] transition-colors cursor-pointer"
-      onClick={(e) => {
-        // Prevent navigation if clicking on buttons
-        if ((e.target as HTMLElement).closest('button')) {
-          e.preventDefault();
-        }
-      }}
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
@@ -97,6 +92,6 @@ export function ServerCard({ server, onTest, onSnapshot, onDelete }: Props) {
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
-    </Link>
+    </div>
   );
 }

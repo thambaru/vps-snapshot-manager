@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { Plus, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -32,6 +33,7 @@ export function Servers() {
   const [snapshotServerId, setSnapshotServerId] = useState<string | null>(null);
   const [testingServer, setTestingServer] = useState<ServerType | null>(null);
   const [testResult, setTestResult] = useState<{ success: boolean; latencyMs: number; error?: string } | undefined>();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const activeSnapshots = useProgressStore((s) => s.active);
 
@@ -138,6 +140,7 @@ export function Servers() {
               server={server}
               onTest={handleTest}
               onSnapshot={handleSnapshot}
+              onHistory={(id) => navigate(`/servers/${id}`)}
               onDelete={handleDelete}
             />
           ))}

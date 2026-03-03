@@ -3,11 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { snapshotsApi } from '../api/snapshots.js';
 import { serversApi } from '../api/servers.js';
 import { SnapshotTable } from '../components/SnapshotTable.js';
+import { ProgressModal } from '../components/ProgressModal.js';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function Snapshots() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
+  const [activeSnapshotId, setActiveSnapshotId] = useState<string | null>(null);
   const qc = useQueryClient();
 
   const { data: servers = [] } = useQuery({ queryKey: ['servers'], queryFn: serversApi.list });
@@ -56,6 +58,7 @@ export function Snapshots() {
           <SnapshotTable
             snapshots={snapshots}
             serverNames={serverNames}
+            onSelect={(id) => setActiveSnapshotId(id)}
             onDelete={(id) => {
               if (confirm('Delete this snapshot and its remote file?')) deleteMutation.mutate(id);
             }}
@@ -63,6 +66,13 @@ export function Snapshots() {
           />
         )}
       </div>
+
+      {activeSnapshotId && (
+        <ProgressModal
+          snapshotId={activeSnapshotId}
+          onClose={() => setActiveSnapshotId(null)}
+        />
+      )}
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-sm">

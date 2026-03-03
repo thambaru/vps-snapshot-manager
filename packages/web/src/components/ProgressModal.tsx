@@ -72,8 +72,16 @@ export function ProgressModal({ snapshotId, onClose }: Props) {
   const [showLogs, setShowLogs] = useState(false);
   const [logs, setLogs] = useState<SnapshotLog[]>([]);
   const logEndRef = useRef<HTMLDivElement>(null);
-  const isDone = progress?.status === 'failed' || progress?.status === 'completed';
+  const isDone = !progress || progress.status === 'failed' || progress.status === 'completed';
   const { subscribe } = useWebSocket();
+
+  // If we don't have progress in store, it's likely a historical snapshot
+  // We can default showLogs to true and maybe show a different title
+  useEffect(() => {
+    if (!progress) {
+      setShowLogs(true);
+    }
+  }, [progress]);
 
   // Fetch initial logs on mount
   useEffect(() => {
@@ -116,17 +124,17 @@ export function ProgressModal({ snapshotId, onClose }: Props) {
     }
   }, [logs, showLogs]);
 
-  if (!progress) return null;
-
   const allStages = ['prepare', 'filesystem', 'mysql', 'postgres', 'mongo', 'docker', 'custom', 'bundle', 'upload'];
-  const doneStageNames = new Set(progress.stagesDone.map((s) => s.stage));
+  const doneStageNames = new Set(progress?.stagesDone.map((s) => s.stage) ?? []);
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
       <div className="bg-[hsl(222,47%,13%)] border border-[hsl(222,47%,25%)] rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(222,47%,22%)] shrink-0">
-          <h2 className="font-semibold text-sm">Snapshot in progress</h2>
+          <h2 className="font-semibold text-sm">
+            {progress ? 'Snapshot in progress' : 'Snapshot Details'}
+          </h2>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowLogs((v) => !v)}
@@ -180,7 +188,12 @@ export function ProgressModal({ snapshotId, onClose }: Props) {
 
         {/* Body */}
         <div className="overflow-y-auto">
-          {progress.status === 'failed' ? (
+          {!progress ? (
+            /* Historical view show logs only or a simplified status */
+            <div className="px-6 py-6 text-center text-[hsl(215,20%,50%)] text-sm">
+              {!showLogs && <p>Please click "Logs" to view the snapshot history.</p>}
+            </div>
+          ) : progress.status === 'failed' ? (
             /* Error state */
             <div className="px-6 py-6">
               <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
