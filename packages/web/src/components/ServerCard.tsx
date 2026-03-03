@@ -15,19 +15,25 @@ export function ServerCard({ server, onTest, onSnapshot, onDelete }: Props) {
   const tags: string[] = JSON.parse(server.tags || '[]') as string[];
 
   return (
-    <div className="bg-[hsl(222,47%,15%)] border border-[hsl(222,47%,22%)] rounded-xl p-5 hover:border-[hsl(222,47%,30%)] transition-colors">
+    <Link
+      to={`/servers/${server.id}`}
+      className="block bg-[hsl(222,47%,15%)] border border-[hsl(222,47%,22%)] rounded-xl p-5 hover:border-[hsl(222,47%,30%)] transition-colors cursor-pointer"
+      onClick={(e) => {
+        // Prevent navigation if clicking on buttons
+        if ((e.target as HTMLElement).closest('button')) {
+          e.preventDefault();
+        }
+      }}
+    >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-[hsl(217,91%,60%,0.15)] rounded-lg flex items-center justify-center">
             <Server className="w-5 h-5 text-[hsl(217,91%,60%)]" />
           </div>
           <div>
-            <Link
-              to={`/servers/${server.id}`}
-              className="font-semibold text-sm hover:text-[hsl(217,91%,70%)] transition-colors"
-            >
+            <p className="font-semibold text-sm hover:text-[hsl(217,91%,70%)] transition-colors">
               {server.name}
-            </Link>
+            </p>
             <p className="text-xs text-[hsl(215,20%,55%)] font-mono">
               {server.username}@{server.host}:{server.port}
             </p>
@@ -57,7 +63,10 @@ export function ServerCard({ server, onTest, onSnapshot, onDelete }: Props) {
 
       <div className="flex gap-2 mt-3">
         <button
-          onClick={() => onTest?.(server.id)}
+          onClick={(e) => {
+            e.preventDefault();
+            onTest?.(server.id);
+          }}
           className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-[hsl(222,47%,22%)] hover:bg-[hsl(222,47%,27%)] transition-colors"
         >
           {server.status === 'online' ? (
@@ -68,20 +77,26 @@ export function ServerCard({ server, onTest, onSnapshot, onDelete }: Props) {
           Test
         </button>
         <button
-          onClick={() => onSnapshot?.(server.id)}
+          onClick={(e) => {
+            e.preventDefault();
+            onSnapshot?.(server.id);
+          }}
           className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-[hsl(217,91%,60%,0.15)] hover:bg-[hsl(217,91%,60%,0.25)] text-[hsl(217,91%,70%)] transition-colors"
         >
           <Play className="w-3.5 h-3.5" />
           Snapshot
         </button>
         <button
-          onClick={() => onDelete?.(server.id)}
+          onClick={(e) => {
+            e.preventDefault();
+            onDelete?.(server.id);
+          }}
           className="flex items-center justify-center px-2.5 py-1.5 text-xs rounded-md bg-[hsl(222,47%,22%)] hover:bg-red-500/20 hover:text-red-400 text-[hsl(215,20%,55%)] transition-colors"
           title="Remove server"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
-    </div>
+    </Link>
   );
 }

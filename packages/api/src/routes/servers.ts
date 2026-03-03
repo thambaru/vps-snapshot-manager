@@ -88,10 +88,13 @@ export const serversRoutes: FastifyPluginAsync = async (fastify) => {
       updatedAt: now,
     });
 
-    // Create default empty snapshot config
+    // Create default snapshot config with filesystem backup enabled
     await db.insert(snapshotConfigs).values({
       id: uuidv4(),
       serverId: id,
+      includeFilesystem: true,
+      filesystemPaths: JSON.stringify(['/etc', '/var/www', '/home', '/opt']),
+      excludePaths: JSON.stringify(['/proc', '/sys', '/dev', '/run', '/tmp', '/snap']),
     });
 
     reply.code(201);

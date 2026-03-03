@@ -43,6 +43,31 @@ export interface CreateServerInput {
   notes?: string;
 }
 
+export interface SnapshotConfig {
+  id: string;
+  serverId: string;
+  includeFilesystem: boolean;
+  filesystemPaths: string;
+  excludePaths: string;
+  includeMysql: boolean;
+  mysqlDatabases: string;
+  mysqlUser: string | null;
+  encryptedMysqlPass: string | null;
+  includePostgres: boolean;
+  pgDatabases: string;
+  pgUser: string | null;
+  encryptedPgPass: string | null;
+  includeMongo: boolean;
+  mongoUri: string | null;
+  mongoDatabases: string;
+  includeDockerVolumes: boolean;
+  dockerVolumes: string;
+  customDirs: string;
+  compressionLevel: number;
+  retentionDays: number;
+  updatedAt: number;
+}
+
 export const serversApi = {
   list: () => api.get<Server[]>('/servers').then((r) => r.data),
   get: (id: string) => api.get<Server>(`/servers/${id}`).then((r) => r.data),
@@ -53,7 +78,7 @@ export const serversApi = {
   test: (id: string) =>
     api.post<{ success: boolean; latencyMs: number; error?: string }>(`/servers/${id}/test`).then((r) => r.data),
   info: (id: string) => api.get<ServerInfo>(`/servers/${id}/info`).then((r) => r.data),
-  getConfig: (id: string) => api.get(`/servers/${id}/config`).then((r) => r.data),
-  updateConfig: (id: string, data: unknown) =>
+  getConfig: (id: string) => api.get<SnapshotConfig>(`/servers/${id}/config`).then((r) => r.data),
+  updateConfig: (id: string, data: Partial<SnapshotConfig>) =>
     api.put(`/servers/${id}/config`, data).then((r) => r.data),
 };

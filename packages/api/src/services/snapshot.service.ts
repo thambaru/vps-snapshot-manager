@@ -154,6 +154,20 @@ class SnapshotService {
         await updateSnapshot(snapshotId, { configSnapshot: JSON.stringify(snapshotConfig) });
       }
 
+      // Validate that at least one backup stage is enabled
+      const hasAnyStageEnabled = snapshotConfig?.includeFilesystem ||
+        snapshotConfig?.includeMysql ||
+        snapshotConfig?.includePostgres ||
+        snapshotConfig?.includeMongo ||
+        snapshotConfig?.includeDockerVolumes ||
+        (JSON.parse(snapshotConfig?.customDirs ?? '[]').length > 0);
+
+      if (!hasAnyStageEnabled) {
+        throw new Error(
+          'No backup stages enabled in snapshot configuration. Please enable at least one backup type (Filesystem, MySQL, PostgreSQL, MongoDB, Docker Volumes, or Custom Directories) in the server settings.'
+        );
+      }
+
       let totalProgress = 5;
       const stageWeight = this.calculateStageWeights(snapshotConfig);
 
