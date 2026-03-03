@@ -132,7 +132,7 @@ export function Settings() {
                     <div className="w-8 h-8 bg-[hsl(222,47%,22%)] rounded-lg flex items-center justify-center text-xs font-mono text-[hsl(215,20%,60%)]">
                       {remote.type.slice(0, 2).toUpperCase()}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm">{remote.name}</span>
                         {isBuiltIn && (
@@ -142,7 +142,7 @@ export function Settings() {
                           <span className="px-1.5 py-0.5 text-xs bg-yellow-500/20 text-yellow-400 rounded">default</span>
                         )}
                       </div>
-                      <p className="text-xs text-[hsl(215,20%,50%)]">{remote.type} · {remote.remotePath}</p>
+                      <p className="text-xs text-[hsl(215,20%,50%)] break-all">{remote.type} · {remote.name}:{remote.remotePath}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

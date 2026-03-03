@@ -27,14 +27,29 @@ async function appendLog(
   level: 'info' | 'warn' | 'error' = 'info',
   stage?: string,
 ): Promise<void> {
-  await db.insert(snapshotLogs).values({ snapshotId, message, level, stage });
+  const [log] = await db.insert(snapshotLogs).values({ snapshotId, message, level, stage }).returning();
+  
+  // Broadcast log via WebSocket
+  if (log) {
+    progressService.broadcast({
+      type: 'snapshot:log',
+      snapshotId,
+      log: {
+        id: log.id,
+        level: log.level as 'info' | 'warn' | 'error',
+        message: log.message,
+        stage: log.stage,
+        createdAt: log.createdAt,
+      },
+    });
+  }
 }
 
 async function updateSnapshot(
   id: string,
   data: Partial<{
     status: string;
-    currentStage: string | undefined;
+    currentStage: string | null | undefined;
     progressPercent: number;
     errorMessage: string;
     sizeBytes: number;
@@ -446,7 +461,7 @@ class SnapshotService {
 
       await updateSnapshot(snapshotId, {
         status: 'completed',
-        currentStage: undefined,
+        currentStage: null,
         progressPercent: 100,
         sizeBytes: localSizeBytes,
         completedAt: new Date(),

@@ -2,6 +2,7 @@ import { X, CheckCircle2, Loader2, Circle, AlertCircle, Terminal, ChevronDown } 
 import { useProgressStore } from '../store/snapshotProgress.js';
 import { useEffect, useRef, useState } from 'react';
 import { snapshotsApi, type SnapshotLog } from '../api/snapshots.js';
+import { useWebSocket } from '../hooks/useWebSocket.js';
 
 const STAGE_LABELS: Record<string, string> = {
   prepare: 'Connecting',
@@ -71,35 +72,42 @@ export function ProgressModal({ snapshotId, onClose }: Props) {
   const [showLogs, setShowLogs] = useState(false);
   const [logs, setLogs] = useState<SnapshotLog[]>([]);
   const logEndRef = useRef<HTMLDivElement>(null);
-  const lastLogIdRef = useRef<number>(0);
   const isDone = progress?.status === 'failed' || progress?.status === 'completed';
+  const { subscribe } = useWebSocket();
 
-  // Poll logs while the modal is open
+  // Fetch initial logs on mount
   useEffect(() => {
     let cancelled = false;
-
-    async function fetchLogs() {
+    
+    async function fetchInitialLogs() {
       try {
-        const newLogs = await snapshotsApi.logs(snapshotId, lastLogIdRef.current || undefined);
-        if (cancelled) return;
-        if (newLogs.length > 0) {
-          lastLogIdRef.current = newLogs[newLogs.length - 1].id;
-          setLogs((prev) => [...prev, ...newLogs]);
+        const initialLogs = await snapshotsApi.logs(snapshotId);
+        if (!cancelled) {
+          setLogs(initialLogs);
         }
       } catch {
-        // ignore transient errors
+        // ignore errors
       }
     }
-
-    fetchLogs();
-    if (isDone) return; // no need to poll after finish
-
-    const interval = setInterval(fetchLogs, 1500);
+    
+    fetchInitialLogs();
+    
     return () => {
       cancelled = true;
-      clearInterval(interval);
     };
-  }, [snapshotId, isDone]);
+  }, [snapshotId]);
+
+  // Subscribe to new logs via WebSocket
+  useEffect(() => {
+    const unsubscribe = subscribe('snapshot:log', (data) => {
+      const event = data as { type: 'snapshot:log'; snapshotId: string; log: SnapshotLog };
+      if (event.snapshotId === snapshotId) {
+        setLogs((prev) => [...prev, event.log]);
+      }
+    });
+
+    return unsubscribe;
+  }, [snapshotId, subscribe]);
 
   // Auto-scroll log panel to bottom when new lines arrive
   useEffect(() => {

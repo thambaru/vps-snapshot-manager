@@ -4,6 +4,7 @@ export type ProgressEventType =
   | 'snapshot:progress'
   | 'snapshot:stage_complete'
   | 'snapshot:done'
+  | 'snapshot:log'
   | 'server:status';
 
 export interface SnapshotProgressEvent {
@@ -15,6 +16,18 @@ export interface SnapshotProgressEvent {
   progressPercent: number;
   message: string;
   timestamp: number;
+}
+
+export interface SnapshotLogEvent {
+  type: 'snapshot:log';
+  snapshotId: string;
+  log: {
+    id: number;
+    level: 'info' | 'warn' | 'error';
+    message: string;
+    stage: string | null;
+    createdAt: number;
+  };
 }
 
 export interface SnapshotStageCompleteEvent {
@@ -44,6 +57,7 @@ export type WSEvent =
   | SnapshotProgressEvent
   | SnapshotStageCompleteEvent
   | SnapshotDoneEvent
+  | SnapshotLogEvent
   | ServerStatusEvent;
 
 class ProgressService {
