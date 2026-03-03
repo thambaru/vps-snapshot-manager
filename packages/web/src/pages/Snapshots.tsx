@@ -4,12 +4,20 @@ import { snapshotsApi } from '../api/snapshots.js';
 import { serversApi } from '../api/servers.js';
 import { SnapshotTable } from '../components/SnapshotTable.js';
 import { ProgressModal } from '../components/ProgressModal.js';
+import { ConfirmationModal } from '../components/ConfirmationModal.js';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function Snapshots() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
   const [activeSnapshotId, setActiveSnapshotId] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+    confirmLabel?: string;
+  } | null>(null);
   const qc = useQueryClient();
 
   const { data: servers = [] } = useQuery({ queryKey: ['servers'], queryFn: serversApi.list });
@@ -60,9 +68,29 @@ export function Snapshots() {
             serverNames={serverNames}
             onSelect={(id) => setActiveSnapshotId(id)}
             onDelete={(id) => {
-              if (confirm('Delete this snapshot and its remote file?')) deleteMutation.mutate(id);
+              setConfirmation({
+                title: 'Delete Snapshot',
+                message: 'Are you sure you want to delete this snapshot and its remote file?',
+                confirmLabel: 'Delete',
+                variant: 'danger',
+                onConfirm: () => {
+                  deleteMutation.mutate(id);
+                  setConfirmation(null);
+                }
+              });
             }}
-            onCancel={(id) => cancelMutation.mutate(id)}
+            onCancel={(id) => {
+              setConfirmation({
+                title: 'Cancel Snapshot',
+                message: 'Are you sure you want to cancel the running snapshot? This will stop the backup and upload process.',
+                confirmLabel: 'Cancel Snapshot',
+                variant: 'danger',
+                onConfirm: () => {
+                  cancelMutation.mutate(id);
+                  setConfirmation(null);
+                }
+              });
+            }}
           />
         )}
       </div>
@@ -71,6 +99,30 @@ export function Snapshots() {
         <ProgressModal
           snapshotId={activeSnapshotId}
           onClose={() => setActiveSnapshotId(null)}
+          onCancel={(id) => {
+            setConfirmation({
+              title: 'Cancel Snapshot',
+              message: 'Are you sure you want to cancel the running snapshot? This will stop the backup and upload process.',
+              confirmLabel: 'Cancel Snapshot',
+              variant: 'danger',
+              onConfirm: () => {
+                cancelMutation.mutate(id);
+                setConfirmation(null);
+              }
+            });
+          }}
+        />
+      )}
+
+      {confirmation && (
+        <ConfirmationModal
+          isOpen={!!confirmation}
+          title={confirmation.title}
+          message={confirmation.message}
+          confirmLabel={confirmation.confirmLabel}
+          variant={confirmation.variant}
+          onConfirm={confirmation.onConfirm}
+          onCancel={() => setConfirmation(null)}
         />
       )}
 

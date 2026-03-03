@@ -65,9 +65,10 @@ function StageRow({ name, isDone, isCurrent, sizeBytes, durationMs }: StageRowPr
 interface Props {
   snapshotId: string;
   onClose?: () => void;
+  onCancel?: (id: string) => void;
 }
 
-export function ProgressModal({ snapshotId, onClose }: Props) {
+export function ProgressModal({ snapshotId, onClose, onCancel }: Props) {
   const progress = useProgressStore((s) => s.active.get(snapshotId));
   const [showLogs, setShowLogs] = useState(false);
   const [logs, setLogs] = useState<SnapshotLog[]>([]);
@@ -240,10 +241,18 @@ export function ProgressModal({ snapshotId, onClose }: Props) {
               </div>
 
               {/* Status */}
-              <div className="px-6 pb-5">
-                <div className="text-xs text-center text-[hsl(215,20%,50%)] capitalize">
+              <div className="px-6 pb-5 flex items-center justify-between">
+                <div className="text-xs text-[hsl(215,20%,50%)] capitalize">
                   {progress.status}
                 </div>
+                {onCancel && (progress.status === 'running' || progress.status === 'uploading' || progress.status === 'pending') && (
+                  <button
+                    onClick={() => onCancel(snapshotId)}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-yellow-500/30 text-yellow-500/80 hover:bg-yellow-500/10 transition-colors"
+                  >
+                    Cancel Snapshot
+                  </button>
+                )}
               </div>
             </>
           )}

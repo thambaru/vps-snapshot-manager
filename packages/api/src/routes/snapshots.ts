@@ -109,10 +109,7 @@ export const snapshotsRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.code(409).send({ error: 'Snapshot is not running' });
     }
 
-    await db
-      .update(snapshots)
-      .set({ status: 'cancelled', completedAt: new Date() })
-      .where(eq(snapshots.id, req.params.id));
+    await snapshotService.cancelSnapshot(req.params.id);
 
     return { success: true };
   });

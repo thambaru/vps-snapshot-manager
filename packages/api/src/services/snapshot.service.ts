@@ -65,6 +65,8 @@ async function updateSnapshot(
 }
 
 class SnapshotService {
+  private activeSnapshots = new Set<string>();
+
   async triggerSnapshot(
     serverId: string,
     storageRemoteId: string,
@@ -72,6 +74,7 @@ class SnapshotService {
     scheduleId?: string,
   ): Promise<string> {
     const snapshotId = uuidv4();
+    this.activeSnapshots.add(snapshotId);
 
     await db.insert(snapshots).values({
       id: snapshotId,
@@ -100,9 +103,41 @@ class SnapshotService {
         durationSeconds: 0,
         error: message,
       });
+    }).finally(() => {
+      this.activeSnapshots.delete(snapshotId);
     });
 
     return snapshotId;
+  }
+
+  async cancelSnapshot(snapshotId: string): Promise<void> {
+    if (this.activeSnapshots.has(snapshotId)) {
+      this.activeSnapshots.delete(snapshotId);
+      
+      await updateSnapshot(snapshotId, {
+        status: 'cancelled',
+        completedAt: new Date(),
+      });
+
+      await appendLog(snapshotId, 'Snapshot cancelled by user', 'warn');
+
+      progressService.broadcast({
+        type: 'snapshot:done',
+        snapshotId,
+        status: 'cancelled',
+        totalSizeBytes: 0,
+        durationSeconds: 0,
+      });
+    }
+  }
+
+  private async isCancelled(snapshotId: string): Promise<boolean> {
+    if (!this.activeSnapshots.has(snapshotId)) {
+      return true;
+    }
+    // Double check DB in case of multi-instance or race
+    const [snap] = await db.select({ status: snapshots.status }).from(snapshots).where(eq(snapshots.id, snapshotId));
+    return !snap || snap.status === 'cancelled';
   }
 
   private async runSnapshot(
@@ -141,6 +176,8 @@ class SnapshotService {
     };
 
     try {
+      if (await this.isCancelled(snapshotId)) return;
+
       // ── PRE-FLIGHT: ensure rclone is available locally ────
       await updateSnapshot(snapshotId, { status: 'running', currentStage: 'prepare', progressPercent: 1 });
       emitProgress('prepare', 1, 'Checking local dependencies...');
@@ -148,6 +185,8 @@ class SnapshotService {
         emitProgress('prepare', 1, msg);
         appendLog(snapshotId, msg, 'info', 'prepare').catch(() => {});
       });
+
+      if (await this.isCancelled(snapshotId)) return;
 
       // ── PREPARE ──────────────────────────────────────────
       await updateSnapshot(snapshotId, { currentStage: 'prepare', progressPercent: 2 });
@@ -183,11 +222,14 @@ class SnapshotService {
         );
       }
 
+      if (await this.isCancelled(snapshotId)) return;
+
       let totalProgress = 5;
       const stageWeight = this.calculateStageWeights(snapshotConfig);
 
       // ── FILESYSTEM ──────────────────────────────────────
       if (snapshotConfig?.includeFilesystem) {
+        if (await this.isCancelled(snapshotId)) return;
         const stageStart = Date.now();
         await updateSnapshot(snapshotId, { currentStage: 'filesystem', progressPercent: totalProgress });
         emitProgress('filesystem', totalProgress, 'Starting filesystem backup...');
@@ -221,6 +263,7 @@ class SnapshotService {
 
       // ── MYSQL ────────────────────────────────────────────
       if (snapshotConfig?.includeMysql) {
+        if (await this.isCancelled(snapshotId)) return;
         const stageStart = Date.now();
         await updateSnapshot(snapshotId, { currentStage: 'mysql', progressPercent: totalProgress });
         emitProgress('mysql', totalProgress, 'Starting MySQL dumps...');
@@ -241,6 +284,7 @@ class SnapshotService {
           }
 
           for (const dbName of dbList) {
+            if (await this.isCancelled(snapshotId)) return;
             const cmd = `mysqldump -u${user}${pass} --single-transaction --routines --triggers ${dbName} | gzip > ${stagingDir}/mysql-${dbName}.sql.gz`;
             await sshService.executeCommand(server, cmd);
           }
@@ -260,6 +304,7 @@ class SnapshotService {
 
       // ── POSTGRESQL ───────────────────────────────────────
       if (snapshotConfig?.includePostgres) {
+        if (await this.isCancelled(snapshotId)) return;
         const stageStart = Date.now();
         await updateSnapshot(snapshotId, { currentStage: 'postgres', progressPercent: totalProgress });
         emitProgress('postgres', totalProgress, 'Starting PostgreSQL dumps...');
@@ -279,6 +324,7 @@ class SnapshotService {
           }
 
           for (const dbName of dbList) {
+            if (await this.isCancelled(snapshotId)) return;
             const cmd = `pg_dump -U ${user} -Fc ${dbName} > ${stagingDir}/postgres-${dbName}.dump`;
             await sshService.executeCommand(server, cmd);
           }
@@ -298,6 +344,7 @@ class SnapshotService {
 
       // ── MONGODB ──────────────────────────────────────────
       if (snapshotConfig?.includeMongo) {
+        if (await this.isCancelled(snapshotId)) return;
         const stageStart = Date.now();
         await updateSnapshot(snapshotId, { currentStage: 'mongo', progressPercent: totalProgress });
         emitProgress('mongo', totalProgress, 'Starting MongoDB dumps...');
@@ -312,6 +359,7 @@ class SnapshotService {
             await sshService.executeCommand(server, cmd);
           } else {
             for (const dbName of dbs) {
+              if (await this.isCancelled(snapshotId)) return;
               const cmd = `mongodump --uri="${uri}" --db=${dbName} --archive=${stagingDir}/mongo-${dbName}.archive --gzip`;
               await sshService.executeCommand(server, cmd);
             }
@@ -332,6 +380,7 @@ class SnapshotService {
 
       // ── DOCKER VOLUMES ───────────────────────────────────
       if (snapshotConfig?.includeDockerVolumes) {
+        if (await this.isCancelled(snapshotId)) return;
         const stageStart = Date.now();
         await updateSnapshot(snapshotId, { currentStage: 'docker', progressPercent: totalProgress });
         emitProgress('docker', totalProgress, 'Starting Docker volume backups...');
@@ -347,6 +396,7 @@ class SnapshotService {
           }
 
           for (const volName of volList) {
+            if (await this.isCancelled(snapshotId)) return;
             const safeName = volName.replace(/[^a-zA-Z0-9_-]/g, '_');
             const cmd = `docker run --rm -v ${volName}:/data:ro -v ${stagingDir}:/backup alpine tar -czf /backup/docker-${safeName}.tar.gz -C /data .`;
             await sshService.executeCommand(server, cmd);
@@ -369,6 +419,7 @@ class SnapshotService {
       if (snapshotConfig?.customDirs) {
         const customDirs = JSON.parse(snapshotConfig.customDirs) as string[];
         if (customDirs.length > 0) {
+          if (await this.isCancelled(snapshotId)) return;
           const stageStart = Date.now();
           await updateSnapshot(snapshotId, { currentStage: 'custom', progressPercent: totalProgress });
           emitProgress('custom', totalProgress, 'Starting custom directory backups...');
@@ -376,6 +427,7 @@ class SnapshotService {
 
           try {
             for (const dir of customDirs) {
+              if (await this.isCancelled(snapshotId)) return;
               const safeName = dir.replace(/\//g, '_').replace(/^_/, '');
               const cmd = `tar -czf ${stagingDir}/custom-${safeName}.tar.gz -C / ${dir.replace(/^\//, '')}`;
               await sshService.executeCommand(server, cmd);
@@ -403,6 +455,7 @@ class SnapshotService {
       }
 
       // ── BUNDLE ───────────────────────────────────────────
+      if (await this.isCancelled(snapshotId)) return;
       await updateSnapshot(snapshotId, { currentStage: 'bundle', progressPercent: totalProgress });
       emitProgress('bundle', totalProgress, 'Creating final archive...');
 
@@ -419,11 +472,13 @@ class SnapshotService {
         `echo '${JSON.stringify(metadata)}' > ${stagingDir}/metadata.json`,
       );
 
+      if (await this.isCancelled(snapshotId)) return;
       const archiveName = `${server.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-${new Date().toISOString().slice(0, 10)}-${snapshotId.slice(0, 8)}.tar.gz`;
       await sshService.executeCommand(server, `tar -czf /tmp/${archiveName} -C /tmp vps-snapshot-${snapshotId}/`);
       await appendLog(snapshotId, `Bundle created: ${archiveName}`, 'info', 'bundle');
 
       // ── DOWNLOAD TO LOCAL ────────────────────────────────
+      if (await this.isCancelled(snapshotId)) return;
       await updateSnapshot(snapshotId, { currentStage: 'upload', progressPercent: totalProgress, status: 'uploading' });
       emitProgress('upload', totalProgress, 'Downloading snapshot to local...');
 
@@ -436,6 +491,7 @@ class SnapshotService {
       const { size: localSizeBytes } = await stat(localArchivePath);
 
       // ── UPLOAD TO CLOUD ──────────────────────────────────
+      if (await this.isCancelled(snapshotId)) return;
       emitProgress('upload', totalProgress + 5, 'Uploading to cloud storage...');
       await appendLog(snapshotId, `Uploading to ${remote.name}:${remote.remotePath}`, 'info', 'upload');
 
@@ -456,7 +512,7 @@ class SnapshotService {
       });
 
       // ── FINALIZE ─────────────────────────────────────────
-      const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
+      if (await this.isCancelled(snapshotId)) return;
       const totalSizeBytes = stageResults.reduce((sum, s) => sum + s.sizeBytes, 0) || localSizeBytes;
 
       await updateSnapshot(snapshotId, {

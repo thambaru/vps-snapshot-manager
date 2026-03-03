@@ -11,6 +11,7 @@ import { snapshotsApi } from '../api/snapshots.js';
 import { ServerCard } from '../components/ServerCard.js';
 import { ProgressModal } from '../components/ProgressModal.js';
 import { TestConnectionModal } from '../components/TestConnectionModal.js';
+import { ConfirmationModal } from '../components/ConfirmationModal.js';
 import { useProgressStore } from '../store/snapshotProgress.js';
 
 const schema = z.object({
@@ -33,6 +34,13 @@ export function Servers() {
   const [snapshotServerId, setSnapshotServerId] = useState<string | null>(null);
   const [testingServer, setTestingServer] = useState<ServerType | null>(null);
   const [testResult, setTestResult] = useState<{ success: boolean; latencyMs: number; error?: string } | undefined>();
+  const [confirmation, setConfirmation] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+    confirmLabel?: string;
+  } | null>(null);
   const navigate = useNavigate();
   const qc = useQueryClient();
   const activeSnapshots = useProgressStore((s) => s.active);
@@ -63,8 +71,16 @@ export function Servers() {
   const handleDelete = (id: string) => {
     const server = servers.find((s) => s.id === id);
     if (!server) return;
-    if (!confirm(`Remove "${server.name}"? This cannot be undone.`)) return;
-    deleteMutation.mutate(id);
+    setConfirmation({
+      title: 'Remove Server',
+      message: `Remove "${server.name}"? This cannot be undone. All related snapshots will remain.`,
+      confirmLabel: 'Remove',
+      variant: 'danger',
+      onConfirm: () => {
+        deleteMutation.mutate(id);
+        setConfirmation(null);
+      }
+    });
   };
 
   const testMutation = useMutation({
@@ -91,6 +107,11 @@ export function Servers() {
     },
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: snapshotsApi.cancel,
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['snapshots'] }),
+  });
+
   const { register, handleSubmit, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { authType: 'password', port: 22 },
@@ -104,13 +125,25 @@ export function Servers() {
   };
 
   const handleSnapshot = (serverId: string) => {
-    if (storageRemotes.length === 0) {
-      alert('Please add a storage remote in Settings first.');
-      return;
-    }
-    const defaultRemote = storageRemotes.find((r) => r.isDefault) ?? storageRemotes[0];
-    setSnapshotServerId(serverId);
-    snapshotMutation.mutate({ serverId, remoteId: defaultRemote.id });
+    const server = servers.find((s) => s.id === serverId);
+    if (!server) return;
+
+    setConfirmation({
+      title: 'Take Snapshot',
+      message: `Take a manual snapshot of "${server.name}"? This will backup the selected filesystem paths and databases to the default storage remote.`,
+      confirmLabel: 'Take Snapshot',
+      variant: 'info',
+      onConfirm: () => {
+        if (storageRemotes.length === 0) {
+          alert('Please add a storage remote in Settings first.');
+          return;
+        }
+        const defaultRemote = storageRemotes.find((r) => r.isDefault) ?? storageRemotes[0];
+        setSnapshotServerId(serverId);
+        snapshotMutation.mutate({ serverId, remoteId: defaultRemote.id });
+        setConfirmation(null);
+      }
+    });
   };
 
   return (
@@ -294,6 +327,30 @@ export function Servers() {
         <ProgressModal
           snapshotId={activeSnapshotId}
           onClose={() => setActiveSnapshotId(null)}
+          onCancel={(id) => {
+            setConfirmation({
+              title: 'Cancel Snapshot',
+              message: 'Are you sure you want to cancel the running snapshot? This will stop the backup and upload process.',
+              confirmLabel: 'Cancel Snapshot',
+              variant: 'danger',
+              onConfirm: () => {
+                cancelMutation.mutate(id);
+                setConfirmation(null);
+              }
+            });
+          }}
+        />
+      )}
+
+      {confirmation && (
+        <ConfirmationModal
+          isOpen={!!confirmation}
+          title={confirmation.title}
+          message={confirmation.message}
+          confirmLabel={confirmation.confirmLabel}
+          variant={confirmation.variant}
+          onConfirm={confirmation.onConfirm}
+          onCancel={() => setConfirmation(null)}
         />
       )}
     </div>

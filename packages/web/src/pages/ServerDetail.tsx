@@ -8,6 +8,7 @@ import { storageApi } from '../api/storage.js';
 import { StatusBadge } from '../components/StatusBadge.js';
 import { SnapshotTable } from '../components/SnapshotTable.js';
 import { ProgressModal } from '../components/ProgressModal.js';
+import { ConfirmationModal } from '../components/ConfirmationModal.js';
 import { useProgressStore } from '../store/snapshotProgress.js';
 
 function InfoCard({ label, value }: { label: string; value: string | number }) {
@@ -24,6 +25,13 @@ export function ServerDetail() {
   const [activeSnapshotId, setActiveSnapshotId] = useState<string | null>(null);
   const [showConfig, setShowConfig] = useState(false);
   const [config, setConfig] = useState<Partial<SnapshotConfig>>({});
+  const [confirmation, setConfirmation] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+    confirmLabel?: string;
+  } | null>(null);
   const qc = useQueryClient();
   const activeSnapshots = useProgressStore((s) => s.active);
 
@@ -76,6 +84,11 @@ export function ServerDetail() {
   const deleteMutation = useMutation({
     mutationFn: snapshotsApi.delete,
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['snapshots'] }),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: snapshotsApi.cancel,
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['snapshots', { serverId: id }] }),
   });
 
   const configMutation = useMutation({
@@ -134,7 +147,18 @@ export function ServerDetail() {
           Test SSH
         </button>
         <button
-          onClick={() => defaultRemote && snapshotMutation.mutate(defaultRemote.id)}
+          onClick={() => {
+            setConfirmation({
+              title: 'Take Snapshot',
+              message: `Take a manual snapshot of "${server.name}"? This will backup the selected filesystem paths and databases to the default storage remote.`,
+              confirmLabel: 'Take Snapshot',
+              variant: 'info',
+              onConfirm: () => {
+                defaultRemote && snapshotMutation.mutate(defaultRemote.id);
+                setConfirmation(null);
+              }
+            });
+          }}
           disabled={!defaultRemote}
           className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-[hsl(217,91%,60%)] hover:bg-[hsl(217,91%,55%)] text-white font-medium transition-colors disabled:opacity-50"
         >
@@ -445,7 +469,16 @@ export function ServerDetail() {
           showServer={false}
           onSelect={(snapId) => setActiveSnapshotId(snapId)}
           onDelete={(snapId) => {
-            if (confirm('Delete this snapshot?')) deleteMutation.mutate(snapId);
+            setConfirmation({
+              title: 'Delete Snapshot',
+              message: 'Are you sure you want to delete this snapshot and its remote file?',
+              confirmLabel: 'Delete',
+              variant: 'danger',
+              onConfirm: () => {
+                deleteMutation.mutate(snapId);
+                setConfirmation(null);
+              }
+            });
           }}
         />
       </div>
@@ -455,6 +488,30 @@ export function ServerDetail() {
         <ProgressModal
           snapshotId={activeSnapshotId}
           onClose={() => setActiveSnapshotId(null)}
+          onCancel={(id) => {
+            setConfirmation({
+              title: 'Cancel Snapshot',
+              message: 'Are you sure you want to cancel the running snapshot? This will stop the backup and upload process.',
+              confirmLabel: 'Cancel Snapshot',
+              variant: 'danger',
+              onConfirm: () => {
+                cancelMutation.mutate(id);
+                setConfirmation(null);
+              }
+            });
+          }}
+        />
+      )}
+
+      {confirmation && (
+        <ConfirmationModal
+          isOpen={!!confirmation}
+          title={confirmation.title}
+          message={confirmation.message}
+          confirmLabel={confirmation.confirmLabel}
+          variant={confirmation.variant}
+          onConfirm={confirmation.onConfirm}
+          onCancel={() => setConfirmation(null)}
         />
       )}
     </div>
