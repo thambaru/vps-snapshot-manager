@@ -212,7 +212,7 @@ In `Base.astro`:
 - [x] Scaffold Astro project in `docs/`
 - [x] Build Hero, Features, QuickStart, Architecture, TechStack, Footer components
 - [ ] Capture screenshots from the running app
-- [ ] Add `deploy-pages.yml` workflow
+- [x] Add `deploy-pages.yml` workflow
 - [ ] Enable GitHub Pages (Actions source) in repo settings
 - [ ] Add Open Graph image and SEO meta tags
 - [ ] Test locally with `pnpm dev` and `pnpm build && pnpm preview`
