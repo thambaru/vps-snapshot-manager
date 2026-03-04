@@ -490,6 +490,10 @@ class SnapshotService {
       // Get local file size
       const { size: localSizeBytes } = await stat(localArchivePath);
 
+      // Cleanup server items after downloading
+      await sshService.executeCommand(server, `rm -rf ${stagingDir} /tmp/${archiveName}`).catch(() => { });
+      await appendLog(snapshotId, 'Cleaned up temporary files on server', 'info', 'upload');
+
       // ── UPLOAD TO CLOUD ──────────────────────────────────
       if (await this.isCancelled(snapshotId)) return;
       emitProgress('upload', totalProgress + 5, 'Uploading to cloud storage...');
@@ -514,6 +518,7 @@ class SnapshotService {
       // ── FINALIZE ─────────────────────────────────────────
       if (await this.isCancelled(snapshotId)) return;
       const totalSizeBytes = stageResults.reduce((sum, s) => sum + s.sizeBytes, 0) || localSizeBytes;
+      const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
 
       await updateSnapshot(snapshotId, {
         status: 'completed',
@@ -536,7 +541,7 @@ class SnapshotService {
         durationSeconds,
       });
     } finally {
-      // Cleanup remote staging dir
+      // Cleanup any remaining remote files (in case of early failure)
       await sshService.executeCommand(server, `rm -rf ${stagingDir} /tmp/${snapshotId}* 2>/dev/null || true`).catch(() => {});
       // Cleanup local tmp
       await rm(localTmpDir, { recursive: true, force: true }).catch(() => {});

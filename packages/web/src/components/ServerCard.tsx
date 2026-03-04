@@ -17,7 +17,14 @@ export function ServerCard({ server, onTest, onSnapshot, onHistory, onDelete }: 
 
   return (
     <div
-      onClick={() => onHistory?.(server.id)}
+      onClick={(e) => {
+        // Prevent navigation if clicking on buttons
+        if ((e.target as HTMLElement).closest('button')) {
+          e.preventDefault();
+        } else {
+          onHistory?.(server.id);
+        }
+      }}
       className="block bg-[hsl(222,47%,15%)] border border-[hsl(222,47%,22%)] rounded-xl p-5 hover:border-[hsl(222,47%,30%)] transition-colors cursor-pointer"
     >
       <div className="flex items-start justify-between mb-3">
