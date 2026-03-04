@@ -1,0 +1,42 @@
+---
+const technologies = [
+  { name: 'Fastify v5', category: 'Backend' },
+  { name: 'React 19', category: 'Frontend' },
+  { name: 'Vite', category: 'Build Tool' },
+  { name: 'Tailwind CSS', category: 'Styling' },
+  { name: 'Drizzle ORM', category: 'Database' },
+  { name: 'SQLite', category: 'Database' },
+  { name: 'rclone', category: 'Storage' },
+  { name: 'node-cron', category: 'Scheduler' },
+  { name: 'WebSocket', category: 'Real-time' },
+  { name: 'TypeScript', category: 'Language' },
+  { name: 'node-ssh', category: 'SSH Client' },
+  { name: 'Zustand', category: 'State' },
+];
+---
+
+<section class="py-20 sm:py-32 bg-gray-50 dark:bg-gray-900">
+  <div class="mx-auto max-w-7xl px-6 lg:px-8">
+    <div class="mx-auto max-w-2xl text-center mb-16">
+      <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+        Tech Stack
+      </h2>
+      <p class="mt-4 text-lg text-gray-600 dark:text-gray-300">
+        Built with modern, battle-tested technologies
+      </p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+      {technologies.map((tech) => (
+        <div class="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 p-4 text-center hover:shadow-md transition-shadow">
+          <p class="font-semibold text-gray-900 dark:text-white text-sm">
+            {tech.name}
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {tech.category}
+          </p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

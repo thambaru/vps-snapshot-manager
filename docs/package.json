@@ -1,0 +1,21 @@
+{
+  "name": "vps-snapshot-manager-docs",
+  "type": "module",
+  "version": "0.0.1",
+  "description": "GitHub Pages documentation site for VPS Snapshot Manager",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^5.1.6"
+  },
+  "devDependencies": {
+    "@astrojs/tailwind": "^6.0.2",
+    "@types/node": "^20.10.6",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3"
+  }
+}

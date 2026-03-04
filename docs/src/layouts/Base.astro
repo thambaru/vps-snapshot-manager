@@ -1,0 +1,31 @@
+---
+export interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = 'VPS Snapshot Manager', description = 'Self-hosted VPS snapshot manager with 70+ cloud storage providers' } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content="/vps-snapshot-manager/og-image.png" />
+    <meta property="og:url" content="https://thambaru.github.io/vps-snapshot-manager/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content="/vps-snapshot-manager/og-image.png" />
+    <link rel="canonical" href="https://thambaru.github.io/vps-snapshot-manager/" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/vps-snapshot-manager/favicon.svg" />
+  </head>
+  <body class="bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+    <slot />
+  </body>
+</html>

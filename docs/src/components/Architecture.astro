@@ -1,0 +1,81 @@
+---
+---
+
+<section class="py-20 sm:py-32 bg-white dark:bg-gray-950">
+  <div class="mx-auto max-w-7xl px-6 lg:px-8">
+    <div class="mx-auto max-w-2xl text-center mb-16">
+      <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+        Architecture
+      </h2>
+      <p class="mt-4 text-lg text-gray-600 dark:text-gray-300">
+        Modern monorepo with TypeScript, REST API, and real-time updates
+      </p>
+    </div>
+
+    <div class="mx-auto max-w-4xl">
+      <!-- Architecture Diagram -->
+      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="text-center">
+            <div class="rounded-lg bg-blue-100 dark:bg-blue-900/30 p-6 mb-3">
+              <div class="text-3xl mb-2">⚡</div>
+              <h3 class="font-semibold text-gray-900 dark:text-white">API</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">Fastify v5</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">TypeScript</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Drizzle ORM</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">SQLite</p>
+            </div>
+          </div>
+
+          <div class="text-center flex items-center justify-center">
+            <div class="text-4xl text-gray-400">↔</div>
+          </div>
+
+          <div class="text-center">
+            <div class="rounded-lg bg-purple-100 dark:bg-purple-900/30 p-6 mb-3">
+              <div class="text-3xl mb-2">⚛️</div>
+              <h3 class="font-semibold text-gray-900 dark:text-white">Web</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">React 19</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Vite</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Tailwind CSS</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">TanStack Query</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div class="rounded-lg bg-green-100 dark:bg-green-900/30 p-4">
+              <div class="text-2xl mb-1">🐳</div>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">Docker</p>
+            </div>
+            <div class="rounded-lg bg-yellow-100 dark:bg-yellow-900/30 p-4">
+              <div class="text-2xl mb-1">📦</div>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">rclone</p>
+            </div>
+            <div class="rounded-lg bg-red-100 dark:bg-red-900/30 p-4">
+              <div class="text-2xl mb-1">🔌</div>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">WebSocket</p>
+            </div>
+            <div class="rounded-lg bg-indigo-100 dark:bg-indigo-900/30 p-4">
+              <div class="text-2xl mb-1">🔐</div>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">node-ssh</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monorepo Structure -->
+      <div class="mt-8 rounded-lg bg-gray-900 p-6">
+        <pre class="text-sm text-gray-100 overflow-x-auto"><code>packages/
+├── api/          # Fastify v5 + TypeScript backend
+│   ├── src/db/   # Drizzle ORM + SQLite schema
+│   ├── routes/   # REST API endpoints
+│   └── services/ # SSH, snapshot, rclone, scheduler, crypto
+└── web/          # React 19 + Vite + Tailwind CSS frontend
+    ├── pages/    # Dashboard, Servers, Snapshots, Schedules, Settings
+    └── components/ # ServerCard, SnapshotTable, ProgressModal, etc.</code></pre>
+      </div>
+    </div>
+  </div>
+</section>

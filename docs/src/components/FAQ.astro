@@ -1,0 +1,48 @@
+---
+const faqs = [
+  {
+    question: 'Is this production-ready?',
+    answer: 'Yes! The application uses production-grade technologies like Fastify, React, and SQLite with proper error handling, logging, and security practices. All credentials are encrypted with AES-256-GCM.',
+  },
+  {
+    question: 'Which cloud providers are supported?',
+    answer: 'Over 70 providers via rclone including Google Drive, Amazon S3, Microsoft OneDrive, Backblaze B2, Dropbox, SFTP, WebDAV, and many more. You can configure multiple remotes and choose different destinations for each server.',
+  },
+  {
+    question: 'How are credentials stored?',
+    answer: 'All sensitive data (SSH passwords, database passwords, cloud storage tokens) are encrypted using AES-256-GCM encryption before being stored in the SQLite database. The encryption key is derived from your APP_SECRET environment variable.',
+  },
+  {
+    question: 'Can I back up databases?',
+    answer: 'Yes! The application supports MySQL, PostgreSQL, and MongoDB backups. It creates compressed dumps and includes them in the snapshot before uploading to cloud storage.',
+  },
+];
+---
+
+<section class="py-20 sm:py-32 bg-white dark:bg-gray-950">
+  <div class="mx-auto max-w-4xl px-6 lg:px-8">
+    <div class="mx-auto max-w-2xl text-center mb-16">
+      <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+        Frequently Asked Questions
+      </h2>
+    </div>
+
+    <div class="space-y-4">
+      {faqs.map((faq, index) => (
+        <details class="group rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-6">
+          <summary class="cursor-pointer font-semibold text-gray-900 dark:text-white list-none flex items-center justify-between">
+            <span>{faq.question}</span>
+            <span class="ml-6 flex-shrink-0 text-gray-400 group-open:rotate-180 transition-transform">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </span>
+          </summary>
+          <p class="mt-4 text-gray-600 dark:text-gray-400">
+            {faq.answer}
+          </p>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
