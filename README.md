@@ -95,6 +95,200 @@ packages/
 - **Real-time**: WebSocket via @fastify/websocket
 - **Security**: AES-256-GCM via node-forge
 
+## Contributing
+
+We welcome contributions! Here's how to get started:
+
+### Development Setup
+
+1. **Fork and clone** the repository
+2. **Install dependencies**:
+   ```bash
+   pnpm install
+   ```
+3. **Set up environment**:
+   ```bash
+   cp .env.example .env
+   # Edit .env and set APP_SECRET (run: openssl rand -hex 32)
+   ```
+4. **Run database migrations**:
+   ```bash
+   pnpm db:migrate
+   ```
+5. **Start development servers**:
+   ```bash
+   pnpm dev
+   ```
+   - API: http://localhost:3001
+   - Web: http://localhost:3000
+
+### Code Structure
+
+#### API Package (`packages/api/`)
+
+**Routes** (`src/routes/`)
+- One file per resource (servers, snapshots, schedules, storage, system)
+- Use Fastify route schemas for validation
+- Keep route handlers thin—delegate to services
+
+**Services** (`src/services/`)
+- Business logic lives here
+- Each service handles a specific domain (SSH, snapshots, rclone, scheduler, crypto)
+- Services should be stateless and testable
+
+**Database** (`src/db/`)
+- Schema definitions in `schema.ts` using Drizzle ORM
+- Migrations in `migrations/` directory
+- Generate migrations: `pnpm db:generate`
+- Apply migrations: `pnpm db:migrate`
+
+#### Web Package (`packages/web/`)
+
+**Pages** (`src/pages/`)
+- One component per route (Dashboard, Servers, Snapshots, etc.)
+- Use TanStack Query for data fetching
+- Keep pages focused on layout and composition
+
+**Components** (`src/components/`)
+- Reusable UI components
+- Props should be strongly typed with TypeScript interfaces
+- Follow atomic design principles where appropriate
+
+**API Client** (`src/api/`)
+- Centralized API calls using TanStack Query
+- One file per resource matching backend routes
+- Type-safe request/response interfaces
+
+**State Management** (`src/store/`)
+- Use Zustand for global state (e.g., snapshot progress)
+- Keep state minimal—prefer server state via TanStack Query
+
+### Style Guidelines
+
+**TypeScript**
+- Strict mode enabled in all packages
+- No `any` types—use `unknown` or proper types
+- Prefer interfaces over types for object shapes
+- Use type inference where safe
+
+**React**
+- Functional components with hooks
+- Use `React.FC` sparingly—explicit return types preferred
+- Destructure props for clarity
+- Keep components under 200 lines—split if larger
+
+**Naming Conventions**
+- Files: kebab-case for utilities, PascalCase for components
+- Components: PascalCase (e.g., `ServerCard.tsx`)
+- Hooks: camelCase with `use` prefix (e.g., `useWebSocket.ts`)
+- Services: camelCase with `.service.ts` suffix
+- Routes: kebab-case with `.ts` suffix
+
+**Code Formatting**
+- 2-space indentation
+- Single quotes for strings
+- Semicolons required
+- Max line length: 100 characters
+- Use `eslint` and `prettier` (configs in repo)
+
+**API Design**
+- RESTful conventions: GET, POST, PUT, DELETE
+- Versioned endpoints: `/api/v1/...`
+- Consistent error responses with status codes
+- Return JSON with camelCase keys
+
+**Database**
+- Use Drizzle ORM query builder—avoid raw SQL
+- Create migrations for all schema changes
+- Test migrations rollback before committing
+- Use transactions for multi-step operations
+
+### Git Workflow
+
+1. **Create a feature branch**:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. **Make focused commits**:
+   ```bash
+   git commit -m "feat: add server connection test endpoint"
+   git commit -m "fix: resolve SSH key authentication issue"
+   ```
+   
+   Use conventional commit prefixes:
+   - `feat:` - new feature
+   - `fix:` - bug fix
+   - `docs:` - documentation changes
+   - `refactor:` - code refactoring
+   - `test:` - adding or updating tests
+   - `chore:` - maintenance tasks
+
+3. **Keep your branch updated**:
+   ```bash
+   git fetch origin
+   git rebase origin/main
+   ```
+
+4. **Push and create a pull request**:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+### Testing Checklist
+
+Before submitting a PR, ensure:
+
+- [ ] Code builds without errors (`pnpm build`)
+- [ ] No TypeScript errors (`pnpm lint`)
+- [ ] Database migrations apply cleanly
+- [ ] API endpoints return expected responses
+- [ ] UI components render correctly in light/dark mode
+- [ ] Responsive design works on mobile/tablet/desktop
+- [ ] WebSocket connections work for live progress
+- [ ] Error handling is implemented for edge cases
+- [ ] Security: No credentials logged or exposed
+- [ ] Documentation updated if adding new features
+
+### Pull Request Guidelines
+
+- **Title**: Clear, descriptive summary (e.g., "Add support for MongoDB backups")
+- **Description**: 
+  - What changes were made and why
+  - Link to related issues
+  - Screenshots for UI changes
+  - Migration instructions if schema changed
+- **Size**: Keep PRs focused—one feature/fix per PR
+- **Reviews**: Address feedback promptly and professionally
+
+### Adding New Features
+
+**New Backend Endpoint**:
+1. Add route handler in `packages/api/src/routes/`
+2. Create/update service in `packages/api/src/services/`
+3. Add database schema changes if needed (generate migration)
+4. Update API client in `packages/web/src/api/`
+
+**New UI Page**:
+1. Create page component in `packages/web/src/pages/`
+2. Add route in router configuration
+3. Create necessary API client functions
+4. Add navigation link in Sidebar component
+5. Implement responsive design with Tailwind CSS
+
+**Database Schema Change**:
+1. Update `packages/api/src/db/schema.ts`
+2. Generate migration: `pnpm db:generate`
+3. Review generated SQL in `migrations/`
+4. Test migration: `pnpm db:migrate`
+5. Update TypeScript types if needed
+
+### Questions or Issues?
+
+- **Bugs**: Open an issue with reproduction steps
+- **Features**: Discuss in an issue before starting work
+- **Questions**: Start a discussion on GitHub
+
 ## License
 
 [MIT](LICENSE) © 2026 Thambaru Wijesekara
